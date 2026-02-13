@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema QR - Solo Lectura y Creación</title>
+    <style>
+        :root {
+            --mutua: #0066a1;
+            --aurgi: #00a859;
+            --madmotor: #ff6600;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(to right, var(--mutua), var(--aurgi), var(--madmotor));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .domains {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .domain-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--mutua);
+            box-shadow: 0 0 0 3px rgba(0,102,161,0.1);
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .btn-generate {
+            background: var(--mutua);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-generate:hover:not(:disabled) {
+            background: #005080;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,102,161,0.2);
+        }
+        
+        .btn-generate:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .results {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 15px;
+            border: 2px dashed #cbd5e1;
+            text-align: center;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .code-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.8rem;
+            letter-spacing: 3px;
+            background: #1a202c;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .qr-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .copy-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-copy {
+            background: #4fd1c7;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-copy:hover {
+            background: #38b2ac;
+        }
+        
+        .verification-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .verification-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .verification-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .verification-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .verification-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .history {
+            margin-top: 40px;
+        }
+        
+        .history-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: opacity 0.3s;
+        }
+
+        .connection-status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #856404;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .code-display {
+                font-size: 1.4rem;
+                padding: 15px;
+            }
+            
+            .copy-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-copy {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="connectionStatus" class="connection-status offline">
+        🔴 Verificando conexión...
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📋 Sistema de Códigos QR</h1>
+            <p>Genera códigos únicos para documentos - Call Center</p>
+            <div class="domains">
+                <span class="domain-badge">@mutua.es</span>
+                <span class="domain-badge">@aurgi.com</span>
+                <span class="domain-badge">@mutuamadmotor.com</span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h4>🔒 Sistema con Seguridad RLS Activada</h4>
+                <p>Este sistema permite <strong>crear</strong> y <strong>consultar</strong> códigos QR, pero <strong>no permite modificar ni eliminar</strong> códigos existentes por seguridad.</p>
+            </div>
+
+            <!-- Formulario de Generación -->
+            <div class="form-group">
+                <label for="agentEmail">📧 Correo Institucional</label>
+                <input type="email" id="agentEmail" 
+                       placeholder="ejemplo@mutua.es" 
+                       autocomplete="off">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Solo correos de @mutua.es, @aurgi.com o @mutuamadmotor.com
+                </small>
+                <div id="emailMessage" style="font-size: 0.85rem; margin-top: 5px; min-height: 20px;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="agentName">👤 Nombre del Agente</label>
+                <input type="text" id="agentName" placeholder="Nombre Apellido">
+            </div>
+            
+            <div class="form-group">
+                <label for="docType">📄 Tipo de Documento</label>
+                <select id="docType">
+                    <option value="Formación individual">Formación individual</option>
+                    <option value="Formación grupal">Formación grupal</option>
+                    <option value="Acuerdo Confidencialidad">Acuerdo Confidencialidad</option>
+                    <option value="Evaluación de Desempeño">Evaluación de Desempeño</option>
+                    <option value="Petición de formación">Petición de formación</option>
+                    <option value="Minuta">Minuta</option>
+                    <option value="Vacaciones">Vacaciones</option>
+                    <option value="Formador">Formador</option>
+                    <option value="Reporte de Incidencia">Reporte de Incidencia</option>
+                    <option value="Comunicación Interna">Comunicación Interna</option>
+                    <option value="Otro Documento">Otro Documento</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="docHash">🔢 Hash del Documento (opcional)</label>
+                <input type="text" id="docHash" 
+                       placeholder="Pega aquí el hash MD5/SHA256 del documento">
+                <small style="color: #666;">
+                    Usa herramientas como <a href="https://emn178.github.io/online-tools/sha256_checksum.html" target="_blank">esta</a> para generar el hash
+                </small>
+            </div>
+            
+            <button class="btn btn-generate" id="generateBtn" onclick="generateCode()">
+                <span>🔐 GENERAR CÓDIGO Y QR</span>
+            </button>
+            
+            <!-- Resultados -->
+            <div class="results" id="results">
+                <h2>✅ Código Generado Exitosamente</h2>
+                
+                <div class="code-display" id="uniqueCode">
+                    CARGANDO...
+                </div>
+                
+                <p><strong>URL de verificación:</strong></p>
+                <div class="code-display" style="font-size: 1rem;" id="verificationUrl">
+                    CARGANDO...
+                </div>
+                
+                <div class="qr-container">
+                    <div id="qrCode"></div>
+                    <p style="margin-top: 10px; color: #666;">
+                        Escanea para verificar la autenticidad
+                    </p>
+                </div>
+                
+                <div class="copy-buttons">
+                    <button class="btn-copy" onclick="copyToClipboard('uniqueCode')">
+                        📋 Copiar Código
+                    </button>
+                    <button class="btn-copy" onclick="copyToClipboard('verificationUrl')">
+                        🔗 Copiar URL
+                    </button>
+                    <button class="btn-copy" onclick="downloadQR()">
+                        📥 Descargar QR
+                    </button>
+                </div>
+                
+                <div style="margin-top: 30px; background: #e8f4fc; padding: 20px; border-radius: 10px;">
+                    <h4>📝 Instrucciones para el agente:</h4>
+                    <ol style="text-align: left; margin-top: 10px; padding-left: 20px;">
+                        <li>Copia el <strong>código único</strong> o la <strong>URL</strong> de arriba</li>
+                        <li>Pégalo en tu documento (Word, Excel, PDF, etc.)</li>
+                        <li>Si usas el QR, insértalo como imagen en el documento</li>
+                        <li>El código sirve para verificar la autenticidad del documento</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- Sección de Verificación -->
+            <div class="verification-section">
+                <h2>🔍 Verificar Código</h2>
+                <div class="form-group">
+                    <input type="text" id="verifyCode" 
+                           placeholder="Introduce el código de 8 caracteres"
+                           style="text-align: center; letter-spacing: 2px; font-size: 1.2rem;">
+                </div>
+                <button class="btn btn-generate" onclick="verifyCode()" 
+                        style="background: var(--aurgi); max-width: 300px;">
+                    VERIFICAR AUTENTICIDAD
+                </button>
+                
+                <div id="verificationResult" class="verification-result"></div>
+            </div>
+            
+            <!-- Historial Local -->
+            <div class="history" id="historySection">
+                <h2>📊 Historial de Códigos (Local)</h2>
+                <div id="localHistory"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ======================
+    // CONFIGURACIÓN SUPABASE
+    // ======================
+    const SUPABASE_URL = 'https://eayibccyjvpmusarzlgf.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVheWliY2N5anZwbXVzYXJ6bGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODA5OTEsImV4cCI6MjA4NjU1Njk5MX0.TPrFyv7QRJXprmPEK-kwyp0Tcht4S1nDRJr4hZo09Mo';
+    
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+        }
+    });
+    
+    const DOMINIOS_PERMITIDOS = ['@mutua.es', '@aurgi.com', '@mutuamadmotor.com'];
+
+    // ======================
+    // VERIFICAR CONEXIÓN
+    // ======================
+    async function checkConnection() {
+        const statusDiv = document.getElementById('connectionStatus');
+        try {
+            const { data, error } = await supabaseClient
+                .from('codigos_qr')
+                .select('count')
+                .limit(1);
+            
+            if (error) {
+                console.error('Error de conexión:', error);
+                statusDiv.className = 'connection-status offline';
+                statusDiv.innerHTML = '🔴 Sin conexión a BD';
+                return false;
+            }
+            
+            statusDiv.className = 'connection-status online';
+            statusDiv.innerHTML = '🟢 Conectado (RLS Activo)';
+            setTimeout(() => {
+                statusDiv.style.opacity = '0';
+                setTimeout(() => statusDiv.style.display = 'none', 500);
+            }, 3000);
+            return true;
+        } catch (error) {
+            console.error('Error:', error);
+            statusDiv.className = 'connection-status offline';
+            statusDiv.innerHTML = '🔴 Error de conexión';
+            return false;
+        }
+    }
+
+    // ======================
+    // GENERAR CÓDIGO
+    // ======================
+    async function generateCode() {
+        console.log('🔄 Iniciando generación...');
+        
+        const email = document.getElementById('agentEmail').value.trim();
+        const nombre = document.getElementById('agentName').value.trim();
+        const tipoDoc = document.getElementById('docType').value;
+        const hashDoc = document.getElementById('docHash').value.trim();
+        
+        if (!email || !nombre) {
+            alert('❌ Complete todos los campos obligatorios');
+            return;
+        }
+        
+        const emailLower = email.toLowerCase();
+        const esValido = DOMINIOS_PERMITIDOS.some(dominio => emailLower.endsWith(dominio));
+        
+        if (!esValido) {
+            alert('❌ Correo debe ser de @mutua.es, @aurgi.com o @mutuamadmotor.com');
+            return;
+        }
+        
+        const btn = document.getElementById('generateBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span>⏳ Generando...</span>';
+        btn.disabled = true;
+        
+        try {
+            const codigoUnico = generateUniqueCode();
+            console.log('✅ Código generado:', codigoUnico);
+            
+            // INSERT en Supabase (permitido por RLS)
+            const { data, error } = await supabaseClient
+                .from('codigos_qr')
+                .insert({
+                    codigo: codigoUnico,
+                    email: email,
+                    nombre_agente: nombre,
+                    tipo_documento: tipoDoc,
+                    hash_documento: hashDoc || null,
+                    verificado: false
+                })
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('❌ Error Supabase:', error);
+                throw new Error(error.message);
+            }
+            
+            console.log('✅ Guardado en Supabase:', data);
+            
+            const urlVerificacion = `${window.location.origin}${window.location.pathname}?verify=${codigoUnico}`;
+            mostrarResultado(codigoUnico, urlVerificacion, email, nombre, tipoDoc, hashDoc);
+            
+            showStatus('✅ Código guardado', 'online');
+            
+        } catch (error) {
+            console.error('❌ Error:', error);
+            alert('❌ Error al guardar: ' + error.message);
+            showStatus('❌ Error al guardar', 'offline');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // ======================
+    // VERIFICAR CÓDIGO (SOLO LECTURA)
+    // ======================
+    async function verifyCode() {
+        const codigo = document.getElementById('verifyCode').value.trim().toUpperCase();
+        const resultDiv = document.getElementById('verificationResult');
+        
+        if (!codigo || codigo.length !== 8) {
+            resultDiv.className = 'verification-result error';
+            resultDiv.innerHTML = '❌ Código inválido. Debe tener 8 caracteres.';
+            return;
+        }
+        
+        resultDiv.innerHTML = '<p>🔍 Verificando...</p>';
+        resultDiv.className = 'verification-result info';
+        resultDiv.style.display = 'block';
+        
+        try {
+            console.log('🔍 Buscando:', codigo);
+            
+            // SELECT permitido por RLS
+            const { data, error } = await supabaseClient
+                .from('codigos_qr')
+                .select('*')
+                .eq('codigo', codigo)
+                .single();
+            
+            if (error) {
+                console.error('Error:', error);
+                
+                if (error.code === 'PGRST116') {
+                    resultDiv.className = 'verification-result error';
+                    resultDiv.innerHTML = '❌ Código no encontrado';
+                } else {
+                    throw error;
+                }
+                return;
+            }
+            
+            if (data) {
+                console.log('✅ Código encontrado:', data);
+                
+                // Mostrar información (sin actualizar verificado)
+                resultDiv.className = 'verification-result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Código Válido</h3>
+                    <p><strong>Agente:</strong> ${data.nombre_agente}</p>
+                    <p><strong>Email:</strong> ${data.email}</p>
+                    <p><strong>Tipo:</strong> ${data.tipo_documento}</p>
+                    <p><strong>Fecha creación:</strong> ${new Date(data.fecha_creacion).toLocaleString('es-ES')}</p>
+                    ${data.hash_documento ? `<p><strong>Hash:</strong> ${data.hash_documento}</p>` : ''}
+                    <p style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                        <strong>ℹ️ Nota:</strong> Por seguridad, este sistema no permite marcar códigos como verificados desde el navegador.
+                    </p>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error:', error);
+            resultDiv.className = 'verification-result error';
+            resultDiv.innerHTML = '❌ Error: ' + error.message;
+        }
+    }
+
+    // ======================
+    // FUNCIONES AUXILIARES
+    // ======================
+    function mostrarResultado(codigo, url, email, nombre, tipo, hash) {
+        document.getElementById('uniqueCode').textContent = codigo;
+        document.getElementById('verificationUrl').textContent = url;
+        
+        const qrContainer = document.getElementById('qrCode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+            text: url,
+            width: 200,
+            height: 200
+        });
+        
+        saveToLocalHistory({
+            codigo: codigo,
+            email: email,
+            nombre: nombre,
+            tipo: tipo,
+            hash: hash,
+            fecha: new Date().toLocaleString('es-ES'),
+            url: url
+        });
+        
+        document.getElementById('results').classList.add('show');
+        updateLocalHistory();
+        
+        setTimeout(() => {
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+
+    function generateUniqueCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    function validateEmail() {
+        const emailInput = document.getElementById('agentEmail');
+        const email = emailInput.value.trim();
+        const messageDiv = document.getElementById('emailMessage');
+        
+        if (!email) {
+            messageDiv.textContent = '';
+            return false;
+        }
+        
+        const emailLower = email.toLowerCase();
+        const esValido = DOMINIOS_PERMITIDOS.some(dominio => emailLower.endsWith(dominio));
+        
+        if (esValido) {
+            messageDiv.textContent = '✅ Correo válido';
+            messageDiv.style.color = '#28a745';
+            return true;
+        } else {
+            messageDiv.textContent = '⚠️ Dominio no autorizado';
+            messageDiv.style.color = '#ff6600';
+            return false;
+        }
+    }
+
+    function saveToLocalHistory(data) {
+        let historial = JSON.parse(localStorage.getItem('codigosQR') || '[]');
+        historial.unshift(data);
+        if (historial.length > 100) historial = historial.slice(0, 100);
+        localStorage.setItem('codigosQR', JSON.stringify(historial));
+    }
+
+    function updateLocalHistory() {
+        const historial = JSON.parse(localStorage.getItem('codigosQR') || '[]');
+        const container = document.getElementById('localHistory');
+        
+        if (historial.length === 0) {
+            container.innerHTML = '<p style="color: #666; text-align: center;">No hay códigos generados.</p>';
+            return;
+        }
+        
+        let html = '';
+        historial.slice(0, 10).forEach(item => {
+            const dominio = item.email.split('@')[1];
+            let color = '#0066a1';
+            if (dominio === 'aurgi.com') color = '#00a859';
+            if (dominio === 'mutuamadmotor.com') color = '#ff6600';
+            
+            html += `
+                <div class="history-item">
+                    <div>
+                        <strong style="color: ${color}">${item.codigo}</strong><br>
+                        <small>${item.email} • ${item.tipo}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <small>${item.fecha}</small>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text)
+            .then(() => alert('✅ Copiado'))
+            .catch(err => alert('❌ Error al copiar'));
+    }
+
+    function downloadQR() {
+        const qrCanvas = document.querySelector('#qrCode canvas');
+        if (qrCanvas) {
+            const link = document.createElement('a');
+            link.download = `QR_${document.getElementById('uniqueCode').textContent}.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            link.click();
+        }
+    }
+
+    function showStatus(message, status) {
+        const statusDiv = document.getElementById('connectionStatus');
+        statusDiv.style.display = 'block';
+        statusDiv.style.opacity = '1';
+        statusDiv.className = `connection-status ${status}`;
+        statusDiv.innerHTML = message;
+        setTimeout(() => {
+            statusDiv.style.opacity = '0';
+            setTimeout(() => statusDiv.style.display = 'none', 500);
+        }, 3000);
+    }
+
+    // ======================
+    // INICIALIZACIÓN
+    // ======================
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Sistema RLS restrictivo inicializado');
+        console.log('📡 Supabase:', SUPABASE_URL);
+        
+        await checkConnection();
+        
+        const emailInput = document.getElementById('agentEmail');
+        emailInput.addEventListener('input', validateEmail);
+        emailInput.addEventListener('blur', validateEmail);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const verifyCodeParam = urlParams.get('verify');
+        if (verifyCodeParam) {
+            document.getElementById('verifyCode').value = verifyCodeParam;
+            setTimeout(() => {
+                verifyCode();
+                document.querySelector('.verification-section').scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+        
+        updateLocalHistory();
+    });
+</script>
+</body>
+</html>
